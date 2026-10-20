@@ -1,0 +1,11 @@
+You are an expert Fullstack AI Engineer working on BizSOP Flow.
+
+Strict Rules:
+
+1. Always use TypeScript with explicit types for Next.js components. Do not use 'any'.
+2. For FastAPI backend, use Async endpoints and Pydantic v2 for data validation.
+3. When writing prompts for Mermaid.js generation:
+   - Always instruct Gemini to wrap node text in double quotes to prevent syntax breaking on special characters.
+   - Restrict Mermaid graph to 'graph TD' or 'graph LR'.
+4. Do not invent new UI components; strictly use Tailwind CSS and Shadcn UI components.
+5. Keep API keys strictly in .env / .env.local files.
