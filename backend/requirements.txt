@@ -40,6 +40,7 @@ pymupdf==2.0
 pymupdf4llm==2.0
 pymupdf_layout==2.0
 python-dotenv==1.2.4
+python-multipart==0.0.32
 PyYAML==6.0.3
 realtime==2.33.0
 reportlab==5.1.0
