@@ -59,34 +59,76 @@ def create_pdf(filename, title, content_pages):
 
 # 1. SOP Cuti & Izin Karyawan (HR)
 sop_cuti = [
+    # Halaman 1: Tujuan, Ruang Lingkup, dan Definisi
     [
         {"type": "heading", "text": "BAB I: TUJUAN DAN RUANG LINGKUP"},
-        {"type": "paragraph", "text": "Pasal 1: Standar Operasional Prosedur (SOP) ini bertujuan untuk mengatur tata cara pengajuan, persetujuan, dan pencatatan cuti serta izin bagi seluruh karyawan tetap maupun kontrak di lingkungan perusahaan."},
-        {"type": "paragraph", "text": "Pasal 2: Ruang lingkup SOP ini mencakup Cuti Tahunan, Cuti Sakit, Cuti Melahirkan, dan Cuti Alasan Penting/Duka."},
-        {"type": "heading", "text": "BAB II: KETENTUAN UMUM CUTI"},
-        {"type": "paragraph", "text": "Pasal 3: Setiap karyawan berhak atas Cuti Tahunan sebanyak 12 (dua belas) hari kerja setelah menempuh masa kerja minimal 12 (dua belas) bulan secara berturut-turut."},
-        {"type": "paragraph", "text": "Pasal 4: Sisa kuota Cuti Tahunan yang tidak digunakan hingga tanggal 31 Desember pada tahun berjalan, maksimal hanya dapat diakumulasikan sebanyak 3 hari ke tahun berikutnya. Sisa lebih dari 3 hari akan otomatis hangus (forfeited)."},
-        {"type": "paragraph", "text": "Pasal 5: Pengajuan cuti harus diajukan minimal 7 (tujuh) hari kerja sebelum tanggal pelaksanaan cuti melalui sistem HRIS, kecuali untuk kasus darurat (sakit atau duka)."}
+        {"type": "paragraph", "text": "Pasal 1: Standar Operasional Prosedur (SOP) ini diterbitkan dengan tujuan untuk mengatur tata cara pengajuan, proses persetujuan, pencatatan, dan pengawasan cuti serta izin bagi seluruh karyawan di lingkungan perusahaan. Hal ini untuk memastikan keseimbangan antara hak kesejahteraan karyawan dan kelancaran operasional bisnis."},
+        {"type": "paragraph", "text": "Pasal 2: Ruang lingkup SOP ini berlaku secara menyeluruh (nasional) untuk semua karyawan tetap (Permanent), karyawan kontrak (PKWT), dan masa percobaan (Probation) sesuai dengan proporsi hak masing-masing."},
+        {"type": "heading", "text": "BAB II: DEFINISI UMUM"},
+        {"type": "paragraph", "text": "1. Cuti: Keadaan tidak masuk kerja yang diizinkan dalam jangka waktu tertentu dan disetujui oleh pihak manajemen berdasarkan undang-undang ketenagakerjaan dan peraturan perusahaan."},
+        {"type": "paragraph", "text": "2. HRIS (Human Resource Information System): Sistem portal internal perusahaan yang digunakan untuk merekam seluruh administrasi karyawan termasuk kehadiran dan cuti."},
+        {"type": "paragraph", "text": "3. Hari Kerja: Hari operasional perusahaan (Senin hingga Jumat, tidak termasuk hari libur nasional atau cuti bersama yang ditetapkan pemerintah)."}
     ],
+    # Halaman 2: Cuti Tahunan dan Ketentuan Hangus (Forfeited)
     [
-        {"type": "heading", "text": "BAB III: PERAN DAN TANGGUNG JAWAB"},
-        {"type": "paragraph", "text": "1. Karyawan (Pemohon): Bertanggung jawab memastikan kuota cuti masih tersedia, menyelesaikan tugas mendesak, dan menunjuk pengganti sementara (handover person)."},
-        {"type": "paragraph", "text": "2. Atasan Langsung (Manager): Bertanggung jawab meninjau beban kerja tim, memastikan operasional tidak terganggu, dan memberikan persetujuan (approval) maksimal 2x24 jam setelah pengajuan."},
-        {"type": "paragraph", "text": "3. Divisi HRD: Melakukan verifikasi akhir, memotong kuota pada sistem HRIS, dan menyimpan rekam jejak pengajuan untuk keperluan payroll."},
-        {"type": "heading", "text": "BAB IV: ALUR PROSEDUR PENGAJUAN CUTI (FLOW)"},
-        {"type": "paragraph", "text": "Langkah 1: Karyawan login ke portal internal HRIS dan memilih menu 'Leave Request'."},
-        {"type": "paragraph", "text": "Langkah 2: Karyawan mengisi formulir digital yang mencakup: Jenis Cuti, Tanggal Mulai, Tanggal Selesai, Alasan Cuti, dan Nama Rekan Pengganti (Handover)."},
-        {"type": "paragraph", "text": "Langkah 3: Sistem HRIS secara otomatis mengirimkan notifikasi persetujuan (approval routing) ke email Atasan Langsung (Manager)."}
+        {"type": "heading", "text": "BAB III: KETENTUAN CUTI TAHUNAN"},
+        {"type": "paragraph", "text": "Pasal 3: Setiap karyawan berhak atas Cuti Tahunan sebanyak 12 (dua belas) hari kerja setelah menempuh masa kerja minimal 12 (dua belas) bulan secara berturut-turut. Bagi karyawan dengan masa kerja di atas 5 tahun, perusahaan memberikan tambahan cuti loyalitas sebanyak 2 (dua) hari kerja per tahun."},
+        {"type": "paragraph", "text": "Pasal 4: Siklus perhitungan cuti tahunan didasarkan pada tahun kalender berjalan (1 Januari hingga 31 Desember). Karyawan baru yang masuk di pertengahan tahun akan mendapatkan kuota prorata di tahun berikutnya."},
+        {"type": "paragraph", "text": "Pasal 5: Sisa kuota Cuti Tahunan yang tidak digunakan hingga tanggal 31 Desember pada tahun berjalan, maksimal hanya dapat diakumulasikan (carry-over) sebanyak 3 hari ke tahun kalender berikutnya."},
+        {"type": "paragraph", "text": "Pasal 6: Sisa cuti carry-over tersebut wajib dihabiskan selambat-lambatnya pada tanggal 31 Maret di tahun berikutnya. Sisa lebih dari 3 hari, atau sisa carry-over yang tidak dipakai melewati tenggat waktu, akan otomatis hangus (forfeited) dan tidak dapat diuangkan (no encashment)."}
     ],
+    # Halaman 3: Cuti Sakit dan Rawat Inap
     [
-        {"type": "heading", "text": "BAB IV: ALUR PROSEDUR PENGAJUAN CUTI (Lanjutan)"},
-        {"type": "paragraph", "text": "Langkah 4: Atasan Langsung meninjau pengajuan. Jika disetujui, Atasan menekan tombol 'Approve'. Jika ditolak (misalnya karena bentrok dengan jadwal rilis proyek), Atasan menekan 'Reject' dan wajib memberikan catatan penolakan."},
-        {"type": "paragraph", "text": "Langkah 5: Setelah disetujui Atasan Langsung, pengajuan otomatis diteruskan ke antrean (queue) Divisi HRD."},
-        {"type": "paragraph", "text": "Langkah 6: Divisi HRD melakukan validasi akhir terhadap kelengkapan dokumen pendukung (khusus cuti sakit/duka)."},
-        {"type": "paragraph", "text": "Langkah 7: Karyawan menerima email konfirmasi final berupa 'Leave Approved', dan saldo cuti di HRIS akan terpotong secara otomatis."},
-        {"type": "heading", "text": "BAB V: KETENTUAN KHUSUS (PENYAKIT & DUKA)"},
-        {"type": "paragraph", "text": "Pasal 6: Cuti Sakit yang memakan waktu lebih dari 1 (satu) hari kerja wajib menyertakan Surat Keterangan Dokter yang diunggah ke HRIS maksimal 2 hari setelah karyawan kembali bekerja."},
-        {"type": "paragraph", "text": "Pasal 7: Karyawan yang mangkir tanpa pemberitahuan resmi selama 3 hari kerja berturut-turut akan dikirimkan Surat Peringatan (SP) Tingkat 3."}
+        {"type": "heading", "text": "BAB IV: CUTI SAKIT DAN PERAWATAN MEDIS"},
+        {"type": "paragraph", "text": "Pasal 7: Karyawan yang tidak dapat bekerja karena sakit selama 1 (satu) hari kerja wajib memberikan notifikasi lisan/pesan tertulis kepada Atasan Langsung paling lambat pukul 09:00 WIB di hari tersebut."},
+        {"type": "paragraph", "text": "Pasal 8: Cuti Sakit yang memakan waktu 2 (dua) hari kerja atau lebih secara berturut-turut WAJIB menyertakan Surat Keterangan Dokter asli (atau digital resmi). Surat wajib diunggah ke HRIS maksimal 2x24 jam setelah karyawan kembali bekerja."},
+        {"type": "paragraph", "text": "Pasal 9: Perawatan Inap (Opname). Karyawan yang harus menjalani rawat inap akan mendapatkan Cuti Sakit Berbayar (Paid Sick Leave) penuh hingga maksimal 4 (empat) bulan pertama sesuai ketentuan UU Ketenagakerjaan. Setelah bulan ke-4, persentase upah akan disesuaikan sesuai regulasi."},
+        {"type": "paragraph", "text": "Pasal 10: Perusahaan berhak melakukan verifikasi ke instansi medis terkait jika ditemukan kejanggalan pada Surat Keterangan Dokter yang dilampirkan oleh karyawan."}
+    ],
+    # Halaman 4: Cuti Melahirkan dan Gugur Kandungan
+    [
+        {"type": "heading", "text": "BAB V: CUTI MELAHIRKAN DAN GUGUR KANDUNGAN"},
+        {"type": "paragraph", "text": "Pasal 11: Karyawan perempuan berhak atas Cuti Melahirkan berbayar (Paid Maternity Leave) selama total 3 (tiga) bulan. Distribusi standar adalah 1,5 bulan sebelum hari perkiraan lahir (HPL) dan 1,5 bulan setelah melahirkan."},
+        {"type": "paragraph", "text": "Pasal 12: Pengajuan Cuti Melahirkan wajib dilakukan maksimal 1 (satu) bulan sebelum HPL dan dilengkapi dengan surat rekomendasi/keterangan dari dokter kandungan atau bidan."},
+        {"type": "paragraph", "text": "Pasal 13: Karyawan perempuan yang mengalami keguguran kandungan berhak memperoleh waktu istirahat (Cuti Keguguran) selama 1,5 (satu setengah) bulan atau sesuai dengan surat keterangan dokter kandungan."},
+        {"type": "paragraph", "text": "Pasal 14: Karyawan laki-laki berhak atas Cuti Paternity (Istri Melahirkan/Keguguran) selama 2 (dua) hari kerja berbayar dan tidak memotong kuota Cuti Tahunan."}
+    ],
+    # Halaman 5: Cuti Alasan Penting / Duka Cita
+    [
+        {"type": "heading", "text": "BAB VI: CUTI ALASAN PENTING DAN DUKA CITA (PAID LEAVE)"},
+        {"type": "paragraph", "text": "Pasal 15: Perusahaan memberikan izin cuti berbayar tanpa memotong Cuti Tahunan untuk keperluan penting berikut dengan rincian hari kerja:"},
+        {"type": "paragraph", "text": "a. Karyawan menikah: 3 (tiga) hari kerja."},
+        {"type": "paragraph", "text": "b. Menikahkan anak karyawan: 2 (dua) hari kerja."},
+        {"type": "paragraph", "text": "c. Mengkhitankan atau membaptiskan anak: 2 (dua) hari kerja."},
+        {"type": "paragraph", "text": "d. Anggota keluarga inti (Suami/Istri, Anak kandung, Orang tua kandung, Mertua) meninggal dunia: 2 (dua) hari kerja."},
+        {"type": "paragraph", "text": "e. Anggota keluarga dalam satu rumah meninggal dunia: 1 (satu) hari kerja."},
+        {"type": "paragraph", "text": "Pasal 16: Dokumen pendukung untuk Cuti Alasan Penting (misal: fotokopi akta nikah, surat keterangan kematian) wajib diunggah ke HRIS dalam waktu selambat-lambatnya 5 hari kerja setelah karyawan kembali bekerja."}
+    ],
+    # Halaman 6: Cuti Di Luar Tanggungan (Unpaid Leave)
+    [
+        {"type": "heading", "text": "BAB VII: CUTI DI LUAR TANGGUNGAN (UNPAID LEAVE)"},
+        {"type": "paragraph", "text": "Pasal 17: Cuti di Luar Tanggungan Perusahaan (Unpaid Leave) hanya dapat diajukan jika kuota Cuti Tahunan karyawan sudah habis dan terdapat urgensi pribadi yang tidak bisa dihindari."},
+        {"type": "paragraph", "text": "Pasal 18: Pengajuan Unpaid Leave wajib mendapatkan persetujuan berlapis dari Atasan Langsung (Manager), Head of Department (VP/Director), dan Divisi HRD."},
+        {"type": "paragraph", "text": "Pasal 19: Konsekuensi Unpaid Leave: Selama masa cuti ini, karyawan tidak akan menerima gaji pokok, tunjangan transportasi, tunjangan makan, dan perhitungan prorata THR akan disesuaikan secara proporsional."},
+        {"type": "paragraph", "text": "Pasal 20: Maksimal durasi Unpaid Leave yang dapat disetujui dalam satu tahun kalender adalah 30 (tiga puluh) hari kalender. Melebihi waktu tersebut, perusahaan berhak melakukan evaluasi status kepegawaian."}
+    ],
+    # Halaman 7: Prosedur Pengajuan & SLA Persetujuan
+    [
+        {"type": "heading", "text": "BAB VIII: ALUR PROSEDUR DAN SLA PENGAJUAN (FLOW)"},
+        {"type": "paragraph", "text": "Langkah 1: Karyawan wajib mengajukan cuti melalui portal HRIS minimal 7 (tujuh) hari kerja sebelum pelaksanaan cuti tahunan, atau H+1 untuk cuti darurat (sakit/duka)."},
+        {"type": "paragraph", "text": "Langkah 2: Karyawan mengisi form yang memuat Jenis Cuti, Tanggal Pelaksanaan, Catatan Pekerjaan, dan menunjuk 1 (satu) orang rekan sebagai Handover Person (PIC Pengganti)."},
+        {"type": "paragraph", "text": "Langkah 3: Atasan Langsung (Manager) memiliki Service Level Agreement (SLA) maksimal 2x24 jam kerja untuk menyetujui (Approve) atau menolak (Reject) pengajuan di sistem. Jika ditolak, Manager wajib memberikan alasan tertulis di HRIS."},
+        {"type": "paragraph", "text": "Langkah 4: Setelah Manager menyetujui, HRIS akan memotong saldo cuti secara otomatis. Tim Payroll akan mengacu pada data ini untuk kalkulasi pemotongan gaji (jika terdapat status Unpaid Leave)."}
+    ],
+    # Halaman 8: Sanksi, Pelanggaran, dan Penutup
+    [
+        {"type": "heading", "text": "BAB IX: SANKSI DAN PELANGGARAN"},
+        {"type": "paragraph", "text": "Pasal 21: Karyawan yang mangkir kerja tanpa pengajuan cuti resmi dan tanpa pemberitahuan sama sekali (AWOL - Absence Without Official Leave) selama 3 (tiga) hari kerja berturut-turut akan diklasifikasikan sebagai pengunduran diri sepihak sesuai hukum ketenagakerjaan."},
+        {"type": "paragraph", "text": "Pasal 22: Memalsukan dokumen pendukung (misal: Surat Dokter palsu, Akta Kematian palsu) dikategorikan sebagai pelanggaran berat (Fraud) yang dapat berujung pada Pemutusan Hubungan Kerja (PHK) seketika tanpa peringatan."},
+        {"type": "heading", "text": "BAB X: PENUTUP"},
+        {"type": "paragraph", "text": "Pasal 23: SOP ini berlaku efektif sejak tanggal ditandatangani dan menggantikan seluruh kebijakan cuti internal versi sebelumnya."},
+        {"type": "paragraph", "text": "Pasal 24: Manajemen berhak meninjau dan mengubah kebijakan ini sewaktu-waktu sesuai dengan perubahan regulasi pemerintah atau kondisi finansial perusahaan. Segala perubahan akan disosialisasikan minimal 14 hari sebelum efektif."},
+        {"type": "paragraph", "text": "Disahkan oleh: CHRO (Chief Human Resources Officer) & Direktur Utama."}
     ]
 ]
 
@@ -121,31 +163,91 @@ sop_deployment = [
     ]
 ]
 
-# 3. SOP Pengajuan Reimbursement (Finance)
+# 3. SOP Pengajuan Reimbursement Operational (Finance) - 10 Halaman
 sop_reimbursement = [
+    # Halaman 1: Tujuan dan Ruang Lingkup
     [
-        {"type": "heading", "text": "BAB I: KEBIJAKAN UMUM KLAIM PENGELUARAN"},
-        {"type": "paragraph", "text": "Pasal 1: SOP ini mengatur prosedur klaim penggantian dana (reimbursement) atas pengeluaran pribadi karyawan yang digunakan untuk kepentingan operasional perusahaan."},
-        {"type": "paragraph", "text": "Pasal 2: Kategori pengeluaran yang diizinkan meliputi: Biaya perjalanan dinas (tiket, hotel), transportasi lokal (taksi/ride-hailing untuk ke kantor klien), konsumsi rapat/jamuan klien (entertainment), dan pembelian perlengkapan darurat (ATK/lisensi IT minor)."},
-        {"type": "paragraph", "text": "Pasal 3: Seluruh pengeluaran harus berpegang pada prinsip kehati-hatian, relevansi bisnis, dan sesuai dengan batas maksimal anggaran (spending limit) yang ditetapkan perusahaan per level jabatan."},
-        {"type": "heading", "text": "BAB II: SYARAT DOKUMEN (BUKTI TRANSAKSI)"}
+        {"type": "heading", "text": "BAB I: TUJUAN DAN RUANG LINGKUP"},
+        {"type": "paragraph", "text": "Pasal 1: Standar Operasional Prosedur (SOP) ini dibuat dengan tujuan untuk memberikan panduan yang jelas, transparan, dan terstandarisasi terkait tata cara klaim penggantian dana (reimbursement) atas pengeluaran pribadi karyawan yang digunakan demi kepentingan operasional dan bisnis perusahaan."},
+        {"type": "paragraph", "text": "Pasal 2: SOP ini bertujuan untuk menjaga efisiensi anggaran perusahaan, mencegah terjadinya kecurangan (fraud), dan memastikan bahwa setiap pengeluaran telah melalui proses otorisasi yang sah sesuai dengan kebijakan keuangan perusahaan."},
+        {"type": "paragraph", "text": "Pasal 3: Ruang lingkup SOP ini berlaku bagi seluruh karyawan tetap, karyawan kontrak, maupun pihak ketiga (konsultan/freelancer) yang secara resmi ditugaskan oleh manajemen perusahaan untuk menjalankan kegiatan bisnis operasional."}
     ],
+    # Halaman 2: Ketentuan Umum dan Definisi
     [
-        {"type": "heading", "text": "BAB II: SYARAT DOKUMEN (Lanjutan)"},
-        {"type": "paragraph", "text": "Pasal 4: Klaim wajib disertai bukti transaksi berupa kuitansi, struk fisik asli yang dicetak mesin, atau e-receipt resmi dari platform digital (misal: Grab, Traveloka). Nota tulis tangan tanpa stempel toko tidak dianggap valid."},
-        {"type": "paragraph", "text": "Pasal 5: Batas waktu maksimal pengajuan klaim adalah 30 (tiga puluh) hari kalender terhitung sejak tanggal transaksi yang tertera pada struk. Melewati batas ini, sistem akan menolak klaim secara otomatis."},
-        {"type": "heading", "text": "BAB III: ALUR PENGAJUAN DAN VERIFIKASI (FLOW)"},
-        {"type": "paragraph", "text": "Langkah 1: Karyawan memfoto atau melakukan scan bukti struk secara jelas, lalu mengunggahnya melalui aplikasi ERP/Finance internal perusahaan pada menu 'Expense Claim'."},
-        {"type": "paragraph", "text": "Langkah 2: Karyawan melengkapi data formulir yang berisi: Tanggal Transaksi, Nama Merchant, Kategori Biaya, Nominal Sesuai Struk, dan Deskripsi/Tujuan Pengeluaran."}
+        {"type": "heading", "text": "BAB II: DEFINISI DAN KETENTUAN UMUM"},
+        {"type": "paragraph", "text": "Pasal 4: Reimbursement adalah proses penggantian uang pribadi karyawan oleh perusahaan setelah karyawan tersebut melakukan pengeluaran yang diotorisasi untuk keperluan perusahaan, dengan melampirkan bukti transaksi yang sah."},
+        {"type": "paragraph", "text": "Pasal 5: ERP/Finance System adalah portal digital internal perusahaan yang wajib digunakan oleh karyawan untuk mengunggah bukti pengajuan klaim biaya dan memantau status tiket pengajuannya."},
+        {"type": "paragraph", "text": "Pasal 6: Prinsip Kehati-hatian (Prudent Principle): Setiap pengeluaran harus dilakukan secara wajar, tidak berlebihan, dan murni untuk kepentingan perusahaan tanpa adanya unsur kepentingan pribadi karyawan."},
+        {"type": "paragraph", "text": "Pasal 7: Batas Waktu Pengajuan: Klaim reimbursement wajib diajukan maksimal 30 (tiga puluh) hari kalender setelah tanggal transaksi yang tertera pada bukti pembayaran. Keterlambatan pengajuan akan mengakibatkan klaim ditolak secara otomatis oleh sistem, kecuali terdapat izin khusus dari jajaran Direksi."}
     ],
+    # Halaman 3: Jenis Pengeluaran yang Diizinkan - Bagian 1
     [
-        {"type": "heading", "text": "BAB III: ALUR PENGAJUAN DAN VERIFIKASI (Lanjutan)"},
-        {"type": "paragraph", "text": "Langkah 3: Atasan Langsung (Manager) menerima notifikasi dan melakukan validasi apakah pengeluaran tersebut benar ditujukan untuk kebutuhan proyek/operasional tim."},
-        {"type": "paragraph", "text": "Langkah 4: Setelah disetujui Atasan, pengajuan masuk ke antrean Finance Admin. Finance Admin memeriksa orisinalitas struk, kesesuaian nilai nominal, dan kepatuhan terhadap plafon biaya (spending limit)."},
-        {"type": "paragraph", "text": "Langkah 5: Apabila ditemukan ketidaksesuaian atau indikasi fraud (contoh: klaim ganda, manipulasi struk), Finance Admin berhak menolak klaim ('Reject') dengan menyertakan alasan tertulis."},
-        {"type": "heading", "text": "BAB IV: PERSETUJUAN FINAL DAN PENCAIRAN"},
-        {"type": "paragraph", "text": "Langkah 6: Pengajuan yang valid akan diteruskan ke Finance Manager untuk persetujuan akhir (Final Approval)."},
-        {"type": "paragraph", "text": "Langkah 7: Divisi Kasir (Treasury) menjadwalkan transfer dana ke rekening pribadi karyawan. Service Level Agreement (SLA) pencairan dana adalah maksimal 5 (lima) hari kerja sejak dokumen disetujui secara final."}
+        {"type": "heading", "text": "BAB III: KATEGORI PENGELUARAN YANG DIIZINKAN (REIMBURSABLE)"},
+        {"type": "paragraph", "text": "Pasal 8: Biaya Perjalanan Dinas (Business Travel). Meliputi tiket pesawat kelas ekonomi, kereta api, atau bus antar kota yang telah disetujui sebelumnya melalui Surat Perintah Perjalanan Dinas (SPPD). Penambahan bagasi berbayar diizinkan khusus untuk pengangkutan sampel produk atau alat peraga."},
+        {"type": "paragraph", "text": "Pasal 9: Biaya Akomodasi/Hotel. Penginapan standar bisnis yang sesuai dengan pagu anggaran (rate) masing-masing tingkatan jabatan (grade) karyawan. Tambahan layanan kamar (room service) berupa minibar, spa, atau laundry pribadi tidak ditanggung dan akan dipotong dari nilai klaim."},
+        {"type": "paragraph", "text": "Pasal 10: Transportasi Lokal. Meliputi biaya taksi, layanan ride-hailing (seperti Grab/Gojek), atau biaya bahan bakar kendaraan operasional untuk kunjungan ke kantor klien atau lokasi survei proyek."},
+        {"type": "paragraph", "text": "Pasal 11: Biaya Tol dan Parkir. Harus disertai dengan struk resmi dari gerbang tol atau karcis parkir ber-barcode yang menunjukkan durasi serta tarif yang valid."}
+    ],
+    # Halaman 4: Jenis Pengeluaran yang Diizinkan - Bagian 2
+    [
+        {"type": "heading", "text": "BAB IV: KATEGORI PENGELUARAN DIIZINKAN (LANJUTAN)"},
+        {"type": "paragraph", "text": "Pasal 12: Konsumsi dan Jamuan Klien (Client Entertainment). Pengeluaran untuk menjamu klien (makan siang/makan malam) diizinkan selama karyawan menyertakan daftar nama klien, nama instansi, serta hasil/tujuan pertemuan secara rinci di dalam kolom deskripsi sistem ERP."},
+        {"type": "paragraph", "text": "Pasal 13: Biaya Telekomunikasi. Pembelian pulsa atau paket data darurat (di luar tunjangan komunikasi bulanan) yang secara langsung digunakan untuk menunjang penyelesaian proyek di luar jam kerja (overtime support)."},
+        {"type": "paragraph", "text": "Pasal 14: Pembelian Perlengkapan Mendesak (Minor Office Supplies). Pembelian Alat Tulis Kantor (ATK), kabel adaptor, hardisk eksternal, atau lisensi software minor senilai kurang dari Rp 500.000 yang bersifat darurat dan tidak tersedia di gudang logistik perusahaan."},
+        {"type": "paragraph", "text": "Pasal 15: Biaya Pengiriman (Courier/Logistics). Pengiriman dokumen rahasia, legalitas, atau prototipe barang kepada klien maupun antar-cabang yang menggunakan layanan kurir kilat resmi."}
+    ],
+    # Halaman 5: Pengeluaran Tidak Diizinkan
+    [
+        {"type": "heading", "text": "BAB V: PENGELUARAN YANG TIDAK DIIZINKAN (NON-REIMBURSABLE)"},
+        {"type": "paragraph", "text": "Pasal 16: Perusahaan secara tegas tidak akan mengganti (menolak) biaya-biaya berikut ini, meskipun terjadi saat jam kerja atau dalam masa perjalanan dinas luar kota:"},
+        {"type": "paragraph", "text": "a. Biaya denda atau pelanggaran lalu lintas (tilang), biaya derek kendaraan, serta kelalaian pribadi lainnya di jalan raya."},
+        {"type": "paragraph", "text": "b. Pembelian minuman keras (beralkohol), rokok, cerutu, atau produk tembakau lainnya, baik untuk konsumsi pribadi maupun untuk keperluan jamuan klien."},
+        {"type": "paragraph", "text": "c. Biaya keanggotaan klub eksklusif, fasilitas kebugaran (gym), spa, salon kecantikan, dan tagihan hiburan malam (karaoke/kelab)."},
+        {"type": "paragraph", "text": "d. Biaya perbaikan rutin kendaraan pribadi karyawan (seperti ganti oli, suku cadang), kecuali terdapat surat penugasan khusus penggunaan kendaraan pribadi untuk kegiatan bisnis yang ditetapkan direksi."}
+    ],
+    # Halaman 6: Plafon Biaya dan Otorisasi
+    [
+        {"type": "heading", "text": "BAB VI: PLAFON BIAYA (SPENDING LIMITS) DAN OTORISASI"},
+        {"type": "paragraph", "text": "Pasal 17: Semua kategori pengeluaran harus menyesuaikan dengan plafon maksimal yang telah ditetapkan oleh Departemen Keuangan (Finance) pada awal tahun fiskal. Daftar pagu (rate) dibedakan berdasarkan level struktural: Staff, Supervisor, Manager, dan Tingkat Direktur."},
+        {"type": "paragraph", "text": "Pasal 18: Apabila terdapat pengeluaran tak terhindarkan yang terpaksa melebihi plafon harian (misal: lonjakan drastis harga hotel/pesawat di masa high season), karyawan wajib meminta dan melampirkan bukti persetujuan tertulis (Pre-Approval) dari Head of Department (VP/Director) sebelum transaksi terjadi."},
+        {"type": "paragraph", "text": "Pasal 19: Pengeluaran di atas batas plafon tanpa melampirkan Pre-Approval hanya akan diganti senilai batas maksimal plafon. Sisa selisih kelebihan biaya otomatis menjadi tanggung jawab penuh karyawan yang bersangkutan."}
+    ],
+    # Halaman 7: Syarat Dokumen Bukti Transaksi
+    [
+        {"type": "heading", "text": "BAB VII: SYARAT DOKUMEN DAN BUKTI TRANSAKSI"},
+        {"type": "paragraph", "text": "Pasal 20: Klaim hanya diproses jika disertai bukti transaksi fisik atau digital (e-receipt) yang sah dan dapat dibuktikan kebenarannya ke pihak merchant penerbit."},
+        {"type": "paragraph", "text": "Pasal 21: Syarat kuitansi yang sah meliputi: adanya logo/nama merchant, tanggal transaksi yang jelas, rincian barang/jasa, nominal total pembayaran, dan stempel/cap toko (untuk kuitansi/nota yang diterbitkan secara manual)."},
+        {"type": "paragraph", "text": "Pasal 22: Nota kosong, bon tulis tangan tanpa rincian, atau bon tanpa stempel/tanda tangan merchant tidak dianggap valid dan akan langsung di-reject (ditolak)."},
+        {"type": "paragraph", "text": "Pasal 23: Untuk struk yang menggunakan cetakan kertas thermal (struk mudah pudar), karyawan diwajibkan segera memfoto atau memindai (scan) struk tersebut saat masih baru agar tulisan tetap terbaca oleh tim Finance di sistem ERP."},
+        {"type": "paragraph", "text": "Pasal 24: Karyawan dilarang keras melakukan rekayasa seperti menambal (tipe-x), mencoret, atau memodifikasi angka dan tanggal yang tertera pada dokumen struk asli."}
+    ],
+    # Halaman 8: Alur Pengajuan Klaim
+    [
+        {"type": "heading", "text": "BAB VIII: ALUR PROSEDUR PENGAJUAN KLAIM (FLOW)"},
+        {"type": "paragraph", "text": "Langkah 1: Karyawan merapikan dan memfoto atau melakukan pemindaian (scan) bukti transaksi dengan pencahayaan yang cukup, memastikan tulisan dan angka tidak buram atau terpotong."},
+        {"type": "paragraph", "text": "Langkah 2: Karyawan login ke portal ERP / Finance internal, menavigasi ke menu 'Expense Claim', lalu memilih tombol 'Create New Claim'."},
+        {"type": "paragraph", "text": "Langkah 3: Karyawan mengisi formulir digital dengan teliti yang mencakup: Tanggal Transaksi, Nama Merchant, Kategori Biaya, Nominal Persis Sesuai Struk, dan Tujuan Pengeluaran/Nama Klien yang bersangkutan."},
+        {"type": "paragraph", "text": "Langkah 4: Karyawan mengunggah lampiran fail bukti foto transaksi, dokumen pendukung tambahan (seperti dokumen SPPD atau email persetujuan VP jika melebihi plafon), lalu menyimpannya sebagai Draf."},
+        {"type": "paragraph", "text": "Langkah 5: Karyawan menekan tombol 'Submit'. Sistem secara otomatis mengunci perubahan dan mendistribusikan tiket pengajuan ke antrean persetujuan (approval routing) Manager yang bersangkutan."}
+    ],
+    # Halaman 9: Verifikasi, Pengecualian, dan SLA Pencairan
+    [
+        {"type": "heading", "text": "BAB IX: PROSES VERIFIKASI DAN PENCAIRAN DANA"},
+        {"type": "paragraph", "text": "Langkah 6: Atasan Langsung (Manager) memvalidasi kesesuaian dan urgensi operasional dari pengeluaran tersebut selambat-lambatnya 2x24 jam kerja. Jika disetujui (Approve), tiket akan diteruskan otomatis ke antrean Finance Admin."},
+        {"type": "paragraph", "text": "Langkah 7: Finance Admin memverifikasi keabsahan dokumen fisik/digital, memastikan ketaatan terhadap aturan plafon biaya, serta mencocokkan silang untuk menjamin tidak ada pengajuan ganda (duplicate claim) untuk satu transaksi."},
+        {"type": "paragraph", "text": "Langkah 8: Apabila dokumen tidak valid atau kuitansi buram, Finance Admin berhak menekan tombol 'Return', yang mengembalikan tiket kepada karyawan dengan catatan revisi wajib."},
+        {"type": "paragraph", "text": "Langkah 9: Tiket klaim yang lolos tahap audit verifikator akan diajukan untuk mendapatkan persetujuan akhir (Final Approval) dari Finance Manager."},
+        {"type": "paragraph", "text": "Langkah 10: Service Level Agreement (SLA) untuk pencairan dana (pembayaran) adalah selambat-lambatnya 5 (lima) hari kerja sejak dokumen mendapat persetujuan akhir. Dana akan ditransfer melalui jaringan antarbank (LLG/RTGS) ke nomor rekening terdaftar karyawan untuk penerimaan gaji (payroll)."}
+    ],
+    # Halaman 10: Sanksi, Fraud, dan Penutup
+    [
+        {"type": "heading", "text": "BAB X: SANKSI DAN PELANGGARAN KLAIM (FRAUD)"},
+        {"type": "paragraph", "text": "Pasal 25: Segala bentuk manipulasi seperti pemalsuan bukti transaksi, penggelembungan tagihan (mark-up), pengajuan klaim fiktif, hingga pengajuan bukti yang sama ke dua departemen berbeda diklasifikasikan sebagai pelanggaran etika kelas berat (Corporate Fraud)."},
+        {"type": "paragraph", "text": "Pasal 26: Karyawan yang terbukti berdasarkan hasil audit melakukan kecurangan (fraud) akan dikenakan sanksi Pemutusan Hubungan Kerja (PHK) secara tidak hormat tanpa pesangon, wajib mengembalikan 100% dana kerugian perusahaan, serta berpotensi diproses ke pihak berwajib melalui jalur hukum perdata atau pidana."},
+        {"type": "heading", "text": "BAB XI: PENUTUP"},
+        {"type": "paragraph", "text": "Pasal 27: Tim internal Audit dan Finance berhak meninjau ulang dan melakukan inspeksi acak (spot check) mendalam terhadap riwayat klaim yang telah dibayarkan tanpa pemberitahuan sebelumnya."},
+        {"type": "paragraph", "text": "Pasal 28: SOP Reimbursement ini mulai berlaku efektif sejak disahkan dan diterbitkan di sistem Knowledge Base internal, menggantikan seluruh prosedur maupun kebiasaan klaim versi sebelumnya."},
+        {"type": "paragraph", "text": "Disahkan dan ditetapkan oleh: Chief Financial Officer (CFO) dan Direktur Kepatuhan (Compliance Director)."}
     ]
 ]
 

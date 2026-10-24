@@ -56,7 +56,7 @@ def generate_rag_response(query: str, retrieved_chunks: list):
 
     prompt = f"Konteks Dokumen:\n{context_text}\n\nPertanyaan User: {query}"
 
-    # Panggil Gemini API (gemini-3.5-flash) dengan output JSON
+    # Panggil Gemini API (gemini-3.5-flash-lite) dengan output JSON
     response = gemini_client.models.generate_content(
         model='gemini-3.5-flash-lite',
         contents=prompt,
