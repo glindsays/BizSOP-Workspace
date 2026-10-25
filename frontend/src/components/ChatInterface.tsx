@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Send, BookOpen, Bot, User } from 'lucide-react';
+import { Send, BookOpen, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatMessage, api } from '@/lib/api';
 
-// Definisikan tipe sitasi yang selaras dengan backend (page_number & source_text)
 interface Citation {
   page_number: number;
   source_text: string;
@@ -21,23 +20,31 @@ export function ChatInterface() {
   const [loading, setLoading] = useState(false);
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null);
 
- const handleSend = async () => {
+  const handleSend = async () => {
     if (!input.trim() || loading) return;
 
-    const userMsg: ChatMessage = { role: 'user', content: input };
+    const userQuery = input.trim();
+    const userMsg: ChatMessage = { role: 'user', content: userQuery };
+    
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
     try {
-      // Ubah dari 'question: input' menjadi 'query: input' agar sesuai dengan backend
-      const res = await api.post('/chat', { query: input });
-      
+      // Ambil document_id dari localStorage jika ada (disimpan saat upload sukses)
+      const currentDocId = typeof window !== 'undefined' ? localStorage.getItem('current_document_id') : null;
+
+      const res = await api.post('/chat', {
+        query: userQuery,
+        document_id: currentDocId || undefined,
+      });
+
       const botMsg: ChatMessage = {
         role: 'assistant',
-        content: res.data.answer,
-        citations: res.data.citations,
+        content: res.data.answer || 'Tidak ada respons dari server.',
+        citations: res.data.citations || [],
       };
+
       setMessages((prev) => [...prev, botMsg]);
     } catch (error) {
       console.error("Chat API Error:", error);
@@ -66,9 +73,11 @@ export function ChatInterface() {
                 Tanyakan sesuatu seputar dokumen SOP yang telah diunggah...
               </p>
             )}
+
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && <Bot className="w-6 h-6 text-blue-600 shrink-0 mt-1" />}
+                
                 <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-900'}`}>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
 
@@ -89,20 +98,34 @@ export function ChatInterface() {
                     </div>
                   )}
                 </div>
+
                 {msg.role === 'user' && <User className="w-6 h-6 text-slate-600 shrink-0 mt-1" />}
               </div>
             ))}
+
+            {/* Indicator Loading AI Sedang Menjawab */}
+            {loading && (
+              <div className="flex gap-3 justify-start items-center text-slate-500 text-sm">
+                <Bot className="w-6 h-6 text-blue-600 animate-pulse" />
+                <div className="flex items-center gap-2 bg-slate-100 p-3 rounded-lg">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  <span>AI sedang menganalisis SOP...</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2 pt-4">
+          {/* Form Input Pesan */}
+          <div className="flex gap-2 pt-4 border-t mt-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Contoh: Bagaimana prosedur mengajukan cuti tahunan?"
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              disabled={loading}
             />
-            <Button onClick={handleSend} disabled={loading}>
-              <Send className="w-4 h-4" />
+            <Button onClick={handleSend} disabled={loading || !input.trim()}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
         </CardContent>

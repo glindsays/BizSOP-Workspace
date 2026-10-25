@@ -18,11 +18,21 @@ export default function Dashboard() {
   const handleGenerateFlowchart = async () => {
     setGenerating(true);
     try {
-      const res = await api.post('/generate-flowchart');
-      setMermaidSyntax(res.data.mermaidCode);
-      setChecklist(res.data.checklist);
-    } catch (err) {
-      console.error('Gagal membuat flowchart', err);
+      // 1. Ambil document_id dari localStorage
+      const currentDocId = typeof window !== 'undefined' ? localStorage.getItem('current_document_id') : null;
+
+      // 2. Kirim payload dengan document_id (format snake_case sesuai FastAPI)
+      const res = await api.post('/generate-flowchart', {
+        document_id: currentDocId || undefined
+      });
+
+      // 3. Ambil data dengan nama field yang tepat dari backend (mermaid_code)
+      setMermaidSyntax(res.data.mermaid_code || res.data.mermaidCode || '');
+      setChecklist(res.data.checklist || []);
+
+    } catch (err: any) {
+      console.error('Gagal membuat flowchart:', err);
+      alert(err.response?.data?.detail || 'Gagal menghasilkan flowchart dari SOP.');
     } finally {
       setGenerating(false);
     }

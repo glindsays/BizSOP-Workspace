@@ -24,7 +24,7 @@ def retrieve_context(query: str, document_id: str = None):
     return response.data
 
 def generate_rag_response(query: str, retrieved_chunks: list):
-    """Memanggil Gemini Flash dengan konteks dan instruksi ketat untuk sitasi."""
+    """Memanggil Gemini Flash dengan konteks dan instruksi sitasi."""
     if not retrieved_chunks:
         return {
             "answer": "Info tidak ditemukan dalam dokumen SOP yang diunggah.",
@@ -34,38 +34,50 @@ def generate_rag_response(query: str, retrieved_chunks: list):
     # Format teks konteks dari chunks yang berhasil ditarik
     context_text = ""
     for idx, chunk in enumerate(retrieved_chunks):
-        context_text += f"\n--- Referensi {idx+1} (Halaman {chunk['page_number']}) ---\n{chunk['chunk_text']}\n"
+        page_num = chunk.get('page_number', 1)
+        chunk_text = chunk.get('chunk_text', '')
+        context_text += f"\n--- Referensi {idx+1} (Halaman {page_num}) ---\n{chunk_text}\n"
     
-    # System Prompt Ketat (Grounding & Format JSON)
-    system_instruction = """Anda adalah asisten AI internal perusahaan.
-    ATURAN KETAT:
-    1. Jawab pertanyaan HANYA berdasarkan 'Konteks Dokumen' yang diberikan.
-    2. Jika jawaban tidak ada di konteks, JANGAN MENGARANG. Jawab persis dengan kalimat: "Info tidak ditemukan dalam dokumen SOP yang diunggah."
-    3. Untuk setiap klaim faktual yang Anda tulis di jawaban, Anda WAJIB menyertakan kutipan inline dengan format [Page X].
-    4. Respons Anda WAJIB menggunakan format JSON dengan skema berikut:
+    # System Prompt yang Fleksibel Namun Tetap Grounded
+    system_instruction = """Anda adalah asisten AI internal perusahaan yang bertugas menjelaskan dokumen SOP.
+    ATURAN UTAMA:
+    1. Jawab pertanyaan berdasarkan 'Konteks Dokumen' yang diberikan.
+    2. Jika pengguna meminta ringkasan, gambaran umum, atau menanyakan cara kerja SOP, RANGKUM poin-poin penting dari konteks yang tersedia.
+    3. Jika informasi benar-benar TIDAK ADA sama sekali di konteks, jawab persis: "Info tidak ditemukan dalam dokumen SOP yang diunggah."
+    4. Sertakan kutipan halaman [Page X] pada akhir kalimat fakta utama jika memungkinkan.
+    5. Respons WAJIB menggunakan format JSON dengan skema berikut:
     {
-      "answer": "Jawaban komprehensif Anda beserta sitasi [Page X] di akhir kalimat.",
-      "citations": [
+    "answer": "Jawaban komprehensif Anda beserta sitasi [Page X].",
+    "citations": [
         {
-          "page_number": angka halaman rujukan,
-          "source_text": "potongan kalimat persis dari teks sumber sebagai bukti",
-          "document_name": "Nama dokumen atau ID dari referensi"
+        "page_number": 1,
+        "source_text": "potongan kalimat atau konteks ringkas dari teks sumber",
+        "document_name": "SOP Internal"
         }
-      ]
+    ]
     }"""
 
     prompt = f"Konteks Dokumen:\n{context_text}\n\nPertanyaan User: {query}"
 
-    # Panggil Gemini API (gemini-3.5-flash-lite) dengan output JSON
-    response = gemini_client.models.generate_content(
-        model='gemini-3.5-flash-lite',
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            system_instruction=system_instruction,
-            temperature=0.0 # Temperature 0 agar tidak halusinasi
+    try:
+        # Menggunakan nama model Gemini Flash yang valid
+        response = gemini_client.models.generate_content(
+            model='gemini-3.8-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                system_instruction=system_instruction,
+                temperature=0.2 # Sedikit fleksi agar mampu merangkum teks
+            )
         )
-    )
-    
-    # Parse hasil JSON dari teks respons
-    return json.loads(response.text)
+        
+        # Parse hasil JSON dari teks respons
+        return json.loads(response.text)
+
+    except Exception as e:
+        print(f"Error pada Gemini API / Parsing: {e}")
+        # Fallback jika parsing JSON dari LLM gagal
+        return {
+            "answer": "Terjadi kendala dalam memproses jawaban dari dokumen.",
+            "citations": []
+        }

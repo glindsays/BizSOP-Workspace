@@ -20,13 +20,21 @@ export function PdfUploader({ onUploadSuccess }: { onUploadSuccess?: () => void 
     formData.append('file', file);
 
     try {
-      await api.post('/upload', formData, {
+      // 1. Tangkap hasil respon upload dari backend
+      const res = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
+      // 2. Simpan document_id ke localStorage
+      if (res.data && res.data.document_id) {
+        localStorage.setItem('current_document_id', res.data.document_id);
+      }
+
       setStatus('SOP Berhasil diunggah dan di-index!');
       setFile(null);
       if (onUploadSuccess) onUploadSuccess();
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Upload Error:', err);
       setStatus('Gagal mengunggah dokumen.');
     } finally {
       setLoading(false);

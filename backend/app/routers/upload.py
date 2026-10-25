@@ -35,7 +35,8 @@ async def upload_document(
         
         # 3. Generate Embedding di Latar Belakang (Background Task)
         # Hapus "await" dan pindahkan ke background_tasks
-        background_tasks.add_task(process_and_store_embeddings, document_id, chunks)
+        # background_tasks.add_task(process_and_store_embeddings, document_id, chunks)
+        process_and_store_embeddings(document_id, chunks)
         
         total_pages = len(set(c["page_number"] for c in chunks))
         
