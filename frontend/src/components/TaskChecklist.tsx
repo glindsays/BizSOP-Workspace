@@ -7,7 +7,7 @@ import { ListChecks } from 'lucide-react';
 
 export interface TaskItem {
   id: string;
-  text: string;
+  title: string;
   completed: boolean;
 }
 
@@ -47,7 +47,7 @@ export function TaskChecklist({ initialTasks }: { initialTasks: TaskItem[] }) {
               htmlFor={task.id}
               className={`text-sm cursor-pointer leading-tight ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}
             >
-              {task.text}
+              {task.title || JSON.stringify(task)}
             </label>
           </div>
         ))}
