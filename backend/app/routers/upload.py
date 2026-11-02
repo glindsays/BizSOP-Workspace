@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from typing import List
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.pdf_parser import parse_and_chunk_pdf
 from app.services.embedding import process_and_store_embeddings
 from app.core.database import supabase
@@ -14,32 +15,87 @@ class DocumentUploadResponse(BaseModel):
     total_chunks: int
     created_at: datetime
 
+class DocumentItem(BaseModel):
+    id: str
+    file_name: str
+    created_at: datetime
+
+# Catatan: semua endpoint memakai `def` (bukan `async def`) karena memanggil
+# Supabase/Gemini secara sinkron. FastAPI menjalankannya di thread pool,
+# sehingga satu request lambat tidak memblokir request lain.
+
+@router.get("/api/documents", response_model=List[DocumentItem])
+def list_documents():
+    try:
+        res = supabase.table("documents") \
+            .select("id, file_name, created_at") \
+            .order("created_at", desc=True) \
+            .execute()
+        return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def _delete_doc(doc_id: str):
+    supabase.table("document_chunks").delete().eq("document_id", doc_id).execute()
+    supabase.table("documents").delete().eq("id", doc_id).execute()
+
+@router.delete("/api/documents/{document_id}")
+def delete_document(document_id: str):
+    try:
+        _delete_doc(document_id)
+        return {"deleted": document_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/documents/cleanup")
+def cleanup_documents():
+    """Hapus dokumen tanpa chunk dan duplikat nama file (sisakan yang terbaru)."""
+    try:
+        docs = supabase.table("documents") \
+            .select("id, file_name, created_at") \
+            .order("created_at", desc=True) \
+            .execute().data
+
+        kept_names = set()
+        deleted = []
+        for d in docs:  # urut dari terbaru
+            has_chunks = bool(
+                supabase.table("document_chunks")
+                .select("id").eq("document_id", d["id"]).limit(1)
+                .execute().data
+            )
+            if has_chunks and d["file_name"] not in kept_names:
+                kept_names.add(d["file_name"])
+            else:
+                _delete_doc(d["id"])
+                deleted.append(d["id"])
+
+        return {"deleted_count": len(deleted), "kept": len(kept_names)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/api/upload", response_model=DocumentUploadResponse)
-async def upload_document(
-    background_tasks: BackgroundTasks, # Tambahkan parameter ini
-    file: UploadFile = File(...)
-):
-    if not file.filename.endswith('.pdf'):
+def upload_document(file: UploadFile = File(...)):
+    if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Hanya file PDF yang didukung.")
-        
+
+    document_id = None
     try:
         # 1. Simpan metadata
         doc_insert = supabase.table("documents").insert({
             "file_name": file.filename
         }).execute()
         document_id = doc_insert.data[0]["id"]
-        
+
         # 2. Parsing dan Chunking
-        file_bytes = await file.read()
+        file_bytes = file.file.read()
         chunks = parse_and_chunk_pdf(file_bytes)
-        
-        # 3. Generate Embedding di Latar Belakang (Background Task)
-        # Hapus "await" dan pindahkan ke background_tasks
-        # background_tasks.add_task(process_and_store_embeddings, document_id, chunks)
+
+        # 3. Embedding (sinkron, supaya dokumen yang muncul di daftar pasti sudah terindeks)
         process_and_store_embeddings(document_id, chunks)
-        
+
         total_pages = len(set(c["page_number"] for c in chunks))
-        
+
         return DocumentUploadResponse(
             document_id=document_id,
             file_name=file.filename,
@@ -47,6 +103,12 @@ async def upload_document(
             total_chunks=len(chunks),
             created_at=datetime.utcnow()
         )
-        
+
     except Exception as e:
+        # Bersihkan dokumen yatim agar tidak muncul di daftar
+        if document_id:
+            try:
+                _delete_doc(document_id)
+            except Exception as cleanup_err:
+                print(f"Cleanup gagal: {cleanup_err}")
         raise HTTPException(status_code=500, detail=str(e))

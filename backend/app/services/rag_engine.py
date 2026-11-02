@@ -2,6 +2,40 @@ import json
 from app.core.database import supabase, gemini_client
 from google.genai import types
 
+import time
+from google.genai import errors
+
+# Urutan prioritas: model pertama dicoba dulu, sisanya cadangan.
+# Sesuaikan dengan nama model yang tersedia di akunmu.
+MODEL_FALLBACKS = [
+    "gemini-3.8-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+]
+
+def generate_with_fallback(contents, config, models=MODEL_FALLBACKS, retries_per_model=2):
+    """Coba tiap model berurutan. Retry singkat kalau overload, lalu pindah model."""
+    last_error = None
+    for model in models:
+        for attempt in range(retries_per_model):
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model, contents=contents, config=config
+                )
+                print(f"[LLM] berhasil memakai {model}")
+                return response
+            except errors.APIError as e:
+                last_error = e
+                print(f"[LLM] {model} gagal (kode {e.code}), percobaan {attempt + 1}")
+                if e.code == 404:
+                    break  # nama model tidak ada, langsung ke model berikutnya
+                if e.code in (429, 500, 503, 504):
+                    if attempt < retries_per_model - 1:
+                        time.sleep(2 ** attempt)  # jeda 1 detik, lalu 2 detik
+                    continue
+                raise  # 400/401/403: salah request atau kunci, model lain tidak membantu
+    raise last_error
+
 def retrieve_context(query: str, document_id: str = None):
     """Mencari potongan teks (chunks) paling relevan dari Supabase pgvector."""
     # 1. Ubah query user menjadi vektor (768 dimensi)
@@ -60,23 +94,19 @@ def generate_rag_response(query: str, retrieved_chunks: list):
     prompt = f"Konteks Dokumen:\n{context_text}\n\nPertanyaan User: {query}"
 
     try:
-        # Menggunakan nama model Gemini Flash yang valid
-        response = gemini_client.models.generate_content(
-            model='gemini-3.8-flash',
+        response = generate_with_fallback(
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 system_instruction=system_instruction,
-                temperature=0.2 # Sedikit fleksi agar mampu merangkum teks
+                temperature=0.2
             )
         )
-        
-        # Parse hasil JSON dari teks respons
         return json.loads(response.text)
 
     except Exception as e:
-        print(f"Error pada Gemini API / Parsing: {e}")
-        # Fallback jika parsing JSON dari LLM gagal
+        import traceback
+        traceback.print_exc()  # tampilkan error lengkap di terminal
         return {
             "answer": "Terjadi kendala dalam memproses jawaban dari dokumen.",
             "citations": []
