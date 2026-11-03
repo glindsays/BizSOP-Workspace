@@ -3,12 +3,16 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, MessageSquare, GitFork, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 import { PdfUploader } from '@/components/PdfUploader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/lib/app-context';
 import { deleteDocument, getErrorMessage } from '@/lib/api';
+
+const MySwal = withReactContent(Swal);
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -20,14 +24,47 @@ export default function DocumentsPage() {
   };
 
   const remove = async (id: string, name: string) => {
-  if (!confirm(`Hapus "${name}" beserta semua potongan teksnya?`)) return;
-  try {
-    await deleteDocument(id);
-    await refresh();
-  } catch (err) {
-    alert(getErrorMessage(err, 'Gagal menghapus dokumen.'));
-  }
-};
+    // 1. Dialog Konfirmasi Hapus
+    const result = await MySwal.fire({
+      title: 'Hapus Dokumen?',
+      text: `Apakah Anda yakin ingin menghapus "${name}" beserta seluruh potongan teksnya?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444', // warna merah khas Tailwind (red-500)
+      cancelButtonColor: '#64748b', // warna slate (slate-500)
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal',
+      customClass: {
+        popup: 'rounded-xl',
+        confirmButton: 'px-4 py-2 text-sm font-medium rounded-lg',
+        cancelButton: 'px-4 py-2 text-sm font-medium rounded-lg',
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteDocument(id);
+      await refresh();
+
+      // 2. Alert Sukses
+      MySwal.fire({
+        title: 'Berhasil!',
+        text: `Dokumen "${name}" telah dihapus.`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      // 3. Alert Gagal
+      MySwal.fire({
+        title: 'Gagal Hapus',
+        text: getErrorMessage(err, 'Gagal menghapus dokumen.'),
+        icon: 'error',
+        confirmButtonColor: '#6366f1',
+      });
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
