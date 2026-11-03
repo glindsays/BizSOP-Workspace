@@ -9,8 +9,10 @@ from google.genai import errors
 # Sesuaikan dengan nama model yang tersedia di akunmu.
 MODEL_FALLBACKS = [
     "gemini-3.8-flash",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
 ]
 
 def generate_with_fallback(contents, config, models=MODEL_FALLBACKS, retries_per_model=2):
@@ -108,6 +110,6 @@ def generate_rag_response(query: str, retrieved_chunks: list):
         import traceback
         traceback.print_exc()  # tampilkan error lengkap di terminal
         return {
-            "answer": "Terjadi kendala dalam memproses jawaban dari dokumen.",
+            "answer": f"Terjadi kendala dalam memproses jawaban dari dokumen. ({type(e).__name__}: {str(e)[:200]})",
             "citations": []
         }

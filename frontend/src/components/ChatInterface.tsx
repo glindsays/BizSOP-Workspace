@@ -1,5 +1,7 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import React, { useEffect, useRef, useState } from 'react';
 import { Send, BookOpen, Bot, User, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,7 +88,32 @@ export function ChatInterface({ doc }: { doc: DocumentItem }) {
                     : 'bg-slate-100 text-slate-900'
                 )}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === 'assistant' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      ol: ({ children }) => (
+                        <ol className="list-decimal pl-5 my-2 space-y-1 text-sm">{children}</ol>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="list-disc pl-5 my-2 space-y-1 text-sm">{children}</ul>
+                      ),
+                      li: ({ children }) => (
+                        <li className="pl-1 leading-relaxed">{children}</li>
+                      ),
+                      p: ({ children }) => (
+                        <p className="mb-2 last:mb-0 text-sm leading-relaxed">{children}</p>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-slate-950">{children}</strong>
+                      ),
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                )}
 
                 {msg.citations && msg.citations.length > 0 && (
                   <div className="mt-3 pt-2 border-t border-slate-200 flex flex-wrap items-center gap-2">
@@ -124,7 +151,7 @@ export function ChatInterface({ doc }: { doc: DocumentItem }) {
             </div>
           )}
           <div ref={bottomRef} />
-            {interrupted && (
+          {interrupted && (
             <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               <span>Permintaan ini terputus sebelum jawaban datang.</span>
               <Button size="sm" variant="outline" onClick={() => send(last.content)}>
