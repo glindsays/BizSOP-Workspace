@@ -119,8 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <h1 className="text-base font-semibold text-slate-900 truncate">{current.label}</h1>
             <p className="text-xs text-slate-500 truncate">{current.hint}</p>
           </div>
-          {activeDoc && (
-            <div className="hidden sm:flex items-center gap-2 min-w-0 rounded-full border bg-slate-50 pl-3 pr-1 py-1">
+          {activeDoc && pathname !== '/chat' && (            <div className="hidden sm:flex items-center gap-2 min-w-0 rounded-full border bg-slate-50 pl-3 pr-1 py-1">
               <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span className="text-xs text-slate-700 truncate max-w-[220px]">{activeDoc.file_name}</span>
               <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Terindeks</Badge>

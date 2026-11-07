@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import upload, chat, flowchart
+from app.routers import upload, chat, flowchart, conversations
 
 app = FastAPI(title="BizSOP Flow API", version="1.0.0")
 
@@ -15,6 +15,7 @@ app.add_middleware(
 app.include_router(upload.router)
 app.include_router(chat.router)
 app.include_router(flowchart.router)
+app.include_router(conversations.router)
 
 # Add this new block for the root URL
 @app.get("/")

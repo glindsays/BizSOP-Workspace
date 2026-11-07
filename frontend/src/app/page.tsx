@@ -20,6 +20,8 @@ export default function DocumentsPage() {
 
   const go = (id: string, path: string) => {
     setActiveId(id);
+    // Tombol "Tanya AI" membuka chat baru yang langsung terfokus ke dokumen ini
+    if (path === '/chat') localStorage.setItem('bizsop:new-chat-doc', id);
     router.push(path);
   };
 
