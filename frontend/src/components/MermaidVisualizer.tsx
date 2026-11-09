@@ -7,9 +7,13 @@ import { cn } from '@/lib/utils';
 
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 3;
+const MAX_CANVAS_SIDE = 8000; // batas aman ukuran canvas untuk export PNG
 
 function cleanChart(raw: string) {
-  return raw.replace(/^\s*```(?:mermaid)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  let s = raw.replace(/^\s*```(?:mermaid)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  // "\n" harfiah (ter-escape ganda) tanpa baris baru asli diubah jadi baris baru
+  if (!s.includes('\n') && s.includes('\\n')) s = s.replace(/\\n/g, '\n');
+  return s;
 }
 
 function download(href: string, name: string) {
@@ -29,6 +33,7 @@ export function MermaidVisualizer({ chart, fileName = 'flowchart' }: { chart: st
   const [rendering, setRendering] = useState(true);
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
   const [expanded, setExpanded] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Render mermaid (di-import dinamis supaya aman dari SSR)
   useEffect(() => {
@@ -105,12 +110,17 @@ export function MermaidVisualizer({ chart, fileName = 'flowchart' }: { chart: st
     return () => vp.removeEventListener('wheel', onWheel);
   }, [zoom, svg]);
 
-  // Esc untuk keluar fullscreen
+  // Layar penuh: Esc untuk keluar, scroll halaman dikunci
   useEffect(() => {
     if (!expanded) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setExpanded(false);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [expanded]);
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -140,6 +150,7 @@ export function MermaidVisualizer({ chart, fileName = 'flowchart' }: { chart: st
   };
 
   const exportSvg = () => {
+    setExportError(null);
     const { text } = prepareSvg();
     const url = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
     download(url, `${fileName}.svg`);
@@ -147,20 +158,30 @@ export function MermaidVisualizer({ chart, fileName = 'flowchart' }: { chart: st
   };
 
   const exportPng = () => {
+    setExportError(null);
     const { text, w, h } = prepareSvg();
+    // 2x untuk ketajaman, tapi dibatasi agar diagram besar tidak melewati batas canvas browser
+    const ratio = Math.min(2, MAX_CANVAS_SIDE / Math.max(w, h));
     const img = new Image();
     img.onload = () => {
-      const ratio = 2;
       const canvas = document.createElement('canvas');
-      canvas.width = w * ratio;
-      canvas.height = h * ratio;
+      canvas.width = Math.max(1, Math.round(w * ratio));
+      canvas.height = Math.max(1, Math.round(h * ratio));
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        setExportError('Browser tidak dapat membuat gambar PNG. Gunakan export SVG.');
+        return;
+      }
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      download(canvas.toDataURL('image/png'), `${fileName}.png`);
+      try {
+        download(canvas.toDataURL('image/png'), `${fileName}.png`);
+      } catch {
+        setExportError('Gagal membuat PNG. Gunakan export SVG.');
+      }
     };
+    img.onerror = () => setExportError('Gagal membuat PNG. Gunakan export SVG.');
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`;
   };
 
@@ -199,6 +220,7 @@ export function MermaidVisualizer({ chart, fileName = 'flowchart' }: { chart: st
           <Scan className="w-4 h-4" />
         </Button>
         <span className="text-xs text-slate-500 w-12 text-center">{Math.round(view.scale * 100)}%</span>
+        {exportError && <span className="ml-2 truncate text-xs text-red-600">{exportError}</span>}
         <div className="ml-auto flex items-center gap-1">
           <Button size="sm" variant="ghost" onClick={exportSvg} disabled={!svg}>
             <Download className="w-3.5 h-3.5 mr-1.5" /> SVG

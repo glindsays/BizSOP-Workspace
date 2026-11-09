@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils';
 function loadDone(key: string): string[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem(key) || '[]');
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
   } catch {
     return [];
   }
@@ -23,7 +24,11 @@ export function TaskChecklist({ steps, storageKey }: { steps: ChecklistStep[]; s
 
   const save = (next: string[]) => {
     setDone(next);
-    localStorage.setItem(storageKey, JSON.stringify(next));
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      // penyimpanan penuh/tidak tersedia: progres hanya berlaku selama halaman terbuka
+    }
   };
 
   const toggle = (id: string) =>
@@ -47,34 +52,46 @@ export function TaskChecklist({ steps, storageKey }: { steps: ChecklistStep[]; s
             </Button>
           )}
         </CardTitle>
-        <div className="space-y-1 pt-1">
-          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+        {total > 0 && (
+          <div className="space-y-1 pt-1">
             <div
-              className="h-full bg-emerald-500 transition-all"
-              style={{ width: `${pct}%` }}
-            />
+              className="h-2 rounded-full bg-slate-100 overflow-hidden"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className="h-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+            </div>
+            <p className="text-xs text-slate-500">
+              {count} dari {total} selesai ({pct}%)
+            </p>
           </div>
-          <p className="text-xs text-slate-500">
-            {count} dari {total} selesai ({pct}%)
-          </p>
-        </div>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-1 max-h-[480px] overflow-y-auto">
+        {total === 0 && (
+          <p className="py-6 text-center text-xs text-slate-400">
+            Tidak ada langkah yang ditemukan. Coba generate ulang.
+          </p>
+        )}
+
         {sorted.map((step) => {
           const checked = done.includes(step.id);
+          const inputId = `${storageKey}-${step.id}`;
           return (
             <div
               key={step.id}
               className="flex items-start gap-3 p-2 rounded-md hover:bg-slate-50 transition-colors"
             >
               <Checkbox
-                id={step.id}
+                id={inputId}
                 checked={checked}
                 onCheckedChange={() => toggle(step.id)}
                 className="mt-1"
               />
-              <label htmlFor={step.id} className="cursor-pointer space-y-1 min-w-0">
+              <label htmlFor={inputId} className="cursor-pointer space-y-1 min-w-0">
                 <span
                   className={cn(
                     'block text-sm font-medium leading-tight',
