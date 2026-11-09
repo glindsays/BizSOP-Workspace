@@ -46,6 +46,7 @@ export interface Conversation {
   id: string;
   title: string;
   document_ids: string[]; // kosong = semua dokumen
+  pinned?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -103,7 +104,7 @@ export const createConversation = async (documentIds: string[]) =>
 
 export const updateConversation = async (
   id: string,
-  patch: { title?: string; document_ids?: string[] }
+  patch: { title?: string; document_ids?: string[]; pinned?: boolean }
 ) => (await api.patch<Conversation>(`/conversations/${id}`, patch)).data;
 
 export const deleteConversation = async (id: string) => {

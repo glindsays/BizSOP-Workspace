@@ -55,6 +55,15 @@ function normalizeMarkdown(text: string) {
   return out.join('\n');
 }
 
+// Urutan daftar: yang disematkan di atas, lalu yang terbaru
+function sortConversations(list: Conversation[]) {
+  return [...list].sort(
+    (a, b) =>
+      Number(!!b.pinned) - Number(!!a.pinned) ||
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  );
+}
+
 // Kelompokkan kutipan per dokumen. Kunci memakai document_id (nama file bisa kembar);
 // pesan lama tanpa document_id jatuh ke nama dokumen.
 type CiteItem = { idx: number; cite: Citation; n: number };
@@ -210,6 +219,32 @@ export function ChatInterface() {
     }
   };
 
+  const renameConv = async (id: string, title: string) => {
+    const clean = title.trim();
+    const before = conversations.find((c) => c.id === id);
+    if (!clean || !before || before.title === clean) return;
+    setConversations((p) => p.map((c) => (c.id === id ? { ...c, title: clean } : c)));
+    try {
+      await updateConversation(id, { title: clean });
+    } catch (err) {
+      setConversations((p) => p.map((c) => (c.id === id ? before : c)));
+      alert(getErrorMessage(err, 'Gagal mengubah nama percakapan.'));
+    }
+  };
+
+  const togglePin = async (id: string) => {
+    const before = conversations.find((c) => c.id === id);
+    if (!before) return;
+    const pinned = !before.pinned;
+    setConversations((p) => sortConversations(p.map((c) => (c.id === id ? { ...c, pinned } : c))));
+    try {
+      await updateConversation(id, { pinned });
+    } catch (err) {
+      setConversations((p) => sortConversations(p.map((c) => (c.id === id ? before : c))));
+      alert(getErrorMessage(err, 'Gagal menyematkan percakapan.'));
+    }
+  };
+  
   const changeScope = async (next: string[]) => {
     setScopeError(null);
     if (!activeConv) {
@@ -242,7 +277,7 @@ export function ChatInterface() {
         const created = await createConversation(draftScope);
         convId = created.id;
         justCreated.current = created.id;
-        setConversations((p) => [created, ...p]);
+        setConversations((p) => sortConversations([created, ...p]));
         setActiveId(created.id);
         setPickerOpen(false);
         localStorage.setItem(ACTIVE_CONV_KEY, created.id);
@@ -319,6 +354,8 @@ export function ChatInterface() {
         onSelect={selectConv}
         onNew={newChat}
         onDelete={removeConv}
+        onRename={renameConv}
+        onTogglePin={togglePin}
         disabled={sending}
       />
 

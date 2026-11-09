@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from app.core.database import supabase
 
 router = APIRouter()
@@ -13,6 +13,7 @@ LOCKED_MSG = (
     "Dokumen yang sudah dipakai dalam percakapan tidak bisa dilepas. "
     "Anda hanya bisa menambah dokumen, atau mulai chat baru untuk dokumen yang berbeda."
 )
+MAX_TITLE = 80
 
 class ConversationCreate(BaseModel):
     title: str = "Chat Baru"
@@ -21,11 +22,23 @@ class ConversationCreate(BaseModel):
 class ConversationUpdate(BaseModel):
     title: Optional[str] = None
     document_ids: Optional[List[str]] = None
+    pinned: Optional[bool] = None
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, v):
+        if v is None:
+            return v
+        v = " ".join(v.split())
+        if not v:
+            raise ValueError("Judul tidak boleh kosong.")
+        return v[:MAX_TITLE]
 
 class ConversationOut(BaseModel):
     id: str
     title: str
     document_ids: List[str]
+    pinned: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -39,7 +52,10 @@ class MessageOut(BaseModel):
 @router.get("/api/conversations", response_model=List[ConversationOut])
 def list_conversations():
     try:
-        res = supabase.table("conversations").select("*").order("updated_at", desc=True).execute()
+        res = supabase.table("conversations").select("*") \
+            .order("pinned", desc=True) \
+            .order("updated_at", desc=True) \
+            .execute()
         return res.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
