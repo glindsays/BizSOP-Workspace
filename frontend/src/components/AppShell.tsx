@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, MessageSquare, GitFork, Workflow } from 'lucide-react';
 import { useApp } from '@/lib/app-context';
+// import { ActiveDocumentCard, SidebarDocuments } from '@/components/SidebarDocuments';
 import { ActiveDocumentCard, SidebarDocuments } from '@/components/SidebarDocuments';
 import { cn } from '@/lib/utils';
 
