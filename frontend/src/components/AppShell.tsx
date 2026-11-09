@@ -9,7 +9,7 @@ import { ActiveDocumentCard, SidebarDocuments } from '@/components/SidebarDocume
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { href: '/', label: 'Dokumen', hint: 'Unggah & pilih SOP', icon: FileText },
+  // { href: '/', label: 'Dokumen', hint: 'Unggah & pilih SOP', icon: FileText },
   { href: '/chat', label: 'Tanya Jawab', hint: 'Chat dengan rujukan halaman', icon: MessageSquare },
   { href: '/flowchart', label: 'Flowchart & Checklist', hint: 'Visualisasi prosedur', icon: GitFork },
 ];
