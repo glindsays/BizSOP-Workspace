@@ -11,6 +11,7 @@ router = APIRouter()
 DEFAULT_TITLE = "Chat Baru"
 MSG_DELETED = "Dokumen yang dipilih sudah tidak tersedia. Pilih dokumen lain lewat tombol di kanan atas."
 MSG_INDEXING = "Dokumen yang dipilih masih diproses (indexing). Coba tanyakan lagi dalam beberapa saat."
+MSG_FAILED = "Dokumen yang dipilih gagal diindeks. Hapus lalu unggah ulang dokumen tersebut, atau pilih dokumen lain."
 NOT_FOUND_PREFIX = "Info tidak ditemukan"
 
 # Penanda sumber dari AI: [R3], [R2][R5], atau [R2, R5]
@@ -41,6 +42,7 @@ class Citation(BaseModel):
     page_number: int
     source_text: str
     document_name: str
+    document_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     answer: str
@@ -54,12 +56,14 @@ def _has_chunks(doc_ids: List[str]) -> bool:
 
 def _build_citations(answer: str, chunks: list):
     """Ubah penanda [R#] di jawaban jadi nomor kutipan berurutan [1], [2], ... dan
-    bangun daftar kutipan (unik per dokumen + halaman) dari chunk yang benar-benar dirujuk."""
+    bangun daftar kutipan (unik per dokumen + halaman) dari chunk yang benar-benar dirujuk.
+    Kunci memakai document_id, bukan nama file, karena nama file bisa kembar."""
     citations: List[dict] = []
     key_to_num: dict = {}
 
     def cite_for(chunk) -> int:
-        key = (chunk.get("document_name"), chunk.get("page_number"))
+        doc_key = chunk.get("document_id") or chunk.get("document_name")
+        key = (doc_key, chunk.get("page_number"))
         if key not in key_to_num:
             text = (chunk.get("chunk_text") or "").strip()
             citations.append({
@@ -67,6 +71,7 @@ def _build_citations(answer: str, chunks: list):
                 "page_number": int(chunk.get("page_number") or 1),
                 "source_text": text if len(text) <= 500 else text[:497] + "…",
                 "document_name": chunk.get("document_name") or "SOP Internal",
+                "document_id": chunk.get("document_id"),
             })
             key_to_num[key] = len(citations)
         return key_to_num[key]
@@ -89,6 +94,10 @@ def _build_citations(answer: str, chunks: list):
             cite_for(c)
 
     return new_answer, citations
+
+def _is_ready(doc: dict) -> bool:
+    # Dokumen lama tanpa kolom status dianggap siap
+    return doc.get("status") in (None, "ready")
 
 # --- Endpoint API ---
 # `def` (bukan `async def`): memanggil Supabase/Gemini secara sinkron, jadi dijalankan di
@@ -121,22 +130,39 @@ def chat_with_document(request: ChatRequest):
                 "content": request.query,
             }).execute()
 
-        # 1. Petakan document_id -> nama file; buang dokumen yang sudah dihapus
+        # 1. Petakan document_id -> nama file & status; buang dokumen yang sudah dihapus
         name_by_id = {}
         premade_answer = None
+        skipped_notes: List[str] = []  # dokumen yang tidak ikut dicari (belum siap / gagal)
+
         if doc_ids:
             doc_query = supabase.table("documents") \
-                .select("id, file_name").in_("id", doc_ids).execute()
-            name_by_id = {d["id"]: d["file_name"] for d in (doc_query.data or [])}
+                .select("id, file_name, status").in_("id", doc_ids).execute()
+            rows = doc_query.data or []
+            name_by_id = {d["id"]: d["file_name"] for d in rows}
             existing = [i for i in doc_ids if i in name_by_id]
 
             if not existing:
                 premade_answer = MSG_DELETED
-            elif len(existing) != len(doc_ids):
-                doc_ids = existing
-                if conv:  # bersihkan scope percakapan dari dokumen yang sudah terhapus
+            else:
+                if len(existing) != len(doc_ids) and conv:
+                    # bersihkan scope percakapan dari dokumen yang sudah terhapus
                     supabase.table("conversations").update({"document_ids": existing}) \
                         .eq("id", conv["id"]).execute()
+
+                by_id = {d["id"]: d for d in rows}
+                ready_ids = [i for i in existing if _is_ready(by_id[i])]
+                processing = [by_id[i]["file_name"] for i in existing if by_id[i].get("status") == "processing"]
+                failed = [by_id[i]["file_name"] for i in existing if by_id[i].get("status") == "failed"]
+
+                if not ready_ids:
+                    premade_answer = MSG_INDEXING if processing else MSG_FAILED
+                else:
+                    doc_ids = ready_ids
+                    if processing:
+                        skipped_notes.append("masih diindeks dan belum dipakai: " + ", ".join(processing))
+                    if failed:
+                        skipped_notes.append("gagal diindeks dan tidak dipakai: " + ", ".join(failed))
 
         # 2. Retrieval + generasi jawaban
         retrieved_chunks = []
@@ -148,7 +174,7 @@ def chat_with_document(request: ChatRequest):
             print(f"Query: {request.query} | Search: {search_query} | Doc IDs: {doc_ids or 'semua'} | Chunks Found: {len(retrieved_chunks)}")
 
             if not retrieved_chunks and doc_ids and not _has_chunks(doc_ids):
-                # Embedding dokumen masih berjalan di background
+                # Dokumen siap tapi belum punya chunk (data lama / tidak konsisten)
                 rag_output = {"answer": MSG_INDEXING}
             else:
                 # Mode "semua dokumen": ambil nama dari chunk yang terpakai
@@ -169,6 +195,10 @@ def chat_with_document(request: ChatRequest):
         citations = []
         if retrieved_chunks and not answer.strip().startswith(NOT_FOUND_PREFIX):
             answer, citations = _build_citations(answer, retrieved_chunks)
+
+        # Catatan bila ada dokumen terpilih yang tidak ikut dicari
+        if skipped_notes and not premade_answer:
+            answer = answer.rstrip() + "\n\n_Catatan: " + "; ".join(skipped_notes) + "._"
 
         # 4. Simpan jawaban + perbarui judul/urutan percakapan
         message_id = None

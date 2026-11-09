@@ -3,7 +3,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Send, BookOpen, Bot, User, Loader2, Sparkles, Files, ChevronDown } from 'lucide-react';
+import { Send, BookOpen, Bot, User, Loader2, Sparkles, Files, ChevronDown, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,10 +24,10 @@ import {
   updateConversation,
 } from '@/lib/api';
 import { useApp } from '@/lib/app-context';
+import { NEW_CHAT_KEY } from '@/lib/doc-utils';
 import { cn } from '@/lib/utils';
 
 const ACTIVE_CONV_KEY = 'bizsop:active-conversation';
-const NEW_CHAT_KEY = 'bizsop:new-chat-doc';
 const DEFAULT_TITLE = 'Chat Baru';
 
 const SUGGESTIONS = [
@@ -55,18 +55,23 @@ function normalizeMarkdown(text: string) {
   return out.join('\n');
 }
 
-// Kelompokkan kutipan per dokumen: { nama dokumen -> daftar halaman }
-function groupCitations(cits: Citation[]) {
-  const map = new Map<string, { idx: number; cite: Citation; n: number }[]>();
+// Kelompokkan kutipan per dokumen. Kunci memakai document_id (nama file bisa kembar);
+// pesan lama tanpa document_id jatuh ke nama dokumen.
+type CiteItem = { idx: number; cite: Citation; n: number };
+function groupCitations(cits: Citation[]): [string, string, CiteItem[]][] {
+  const map = new Map<string, { name: string; items: CiteItem[] }>();
   cits.forEach((c, i) => {
-    const key = c.document_name ?? 'SOP';
-    map.set(key, [...(map.get(key) ?? []), { idx: i, cite: c, n: c.ref ?? i + 1 }]);
+    const name = c.document_name ?? 'SOP';
+    const key = c.document_id ?? name;
+    const entry = map.get(key) ?? { name, items: [] };
+    entry.items.push({ idx: i, cite: c, n: c.ref ?? i + 1 });
+    map.set(key, entry);
   });
-  return Array.from(map.entries());
+  return Array.from(map.entries()).map(([key, v]) => [key, v.name, v.items]);
 }
 
 export function ChatInterface() {
-  const { documents } = useApp();
+  const { documents, activeDoc } = useApp();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null); // null = chat baru (draft)
@@ -79,16 +84,23 @@ export function ChatInterface() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [openCite, setOpenCite] = useState<{ msg: string; idx: number } | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [scopeError, setScopeError] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const justCreated = useRef<string | null>(null);
   const initialized = useRef(false);
+  const scopeTouched = useRef(false); // true bila user sudah memilih dokumen sendiri pada draft
 
   const activeConv = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
     [conversations, activeId]
   );
+  const isDraft = !activeConv;
   const scope = activeConv ? activeConv.document_ids : draftScope;
+  // Setelah percakapan berjalan, dokumen yang sudah dipakai tidak boleh dilepas
+  const locked = !!activeConv && (messages.length > 0 || loadingMsgs);
+  const pickerVisible = isDraft || pickerOpen;
+  const noDocuments = documents.length === 0;
 
   const last = messages[messages.length - 1];
   const interrupted = !sending && !loadingMsgs && last?.role === 'user';
@@ -107,6 +119,7 @@ export function ChatInterface() {
         const intent = localStorage.getItem(NEW_CHAT_KEY);
         if (intent) {
           localStorage.removeItem(NEW_CHAT_KEY);
+          scopeTouched.current = true;
           setActiveId(null);
           setDraftScope([intent]);
         } else {
@@ -120,6 +133,12 @@ export function ChatInterface() {
       }
     })();
   }, []);
+
+  // Draft yang belum diubah user mengikuti dokumen aktif (default yang masuk akal)
+  useEffect(() => {
+    if (activeId || scopeTouched.current) return;
+    setDraftScope(activeDoc ? [activeDoc.id] : []);
+  }, [activeId, activeDoc]);
 
   // Muat pesan tiap kali percakapan aktif berganti
   useEffect(() => {
@@ -163,14 +182,17 @@ export function ChatInterface() {
     localStorage.setItem(ACTIVE_CONV_KEY, id);
     setPickerOpen(false);
     setOpenCite(null);
+    setScopeError(null);
   };
 
   const newChat = () => {
+    scopeTouched.current = false;
     setActiveId(null);
-    setDraftScope([]);
+    setDraftScope(activeDoc ? [activeDoc.id] : []);
     localStorage.removeItem(ACTIVE_CONV_KEY);
     setPickerOpen(false);
     setOpenCite(null);
+    setScopeError(null);
   };
 
   const removeConv = async (id: string) => {
@@ -189,7 +211,9 @@ export function ChatInterface() {
   };
 
   const changeScope = async (next: string[]) => {
+    setScopeError(null);
     if (!activeConv) {
+      scopeTouched.current = true;
       setDraftScope(next);
       return;
     }
@@ -197,8 +221,9 @@ export function ChatInterface() {
     setConversations((p) => p.map((c) => (c.id === before.id ? { ...c, document_ids: next } : c)));
     try {
       await updateConversation(before.id, { document_ids: next });
-    } catch {
+    } catch (err) {
       setConversations((p) => p.map((c) => (c.id === before.id ? before : c)));
+      setScopeError(getErrorMessage(err, 'Gagal mengubah dokumen percakapan.'));
     }
   };
 
@@ -207,6 +232,7 @@ export function ChatInterface() {
     if (!query || sending) return;
     setSending(true);
     if (!resend) setInput('');
+    setScopeError(null);
 
     let delivered = resend; // pesan user sudah tampil/terkirim
 
@@ -218,6 +244,7 @@ export function ChatInterface() {
         justCreated.current = created.id;
         setConversations((p) => [created, ...p]);
         setActiveId(created.id);
+        setPickerOpen(false);
         localStorage.setItem(ACTIVE_CONV_KEY, created.id);
       }
 
@@ -282,6 +309,8 @@ export function ChatInterface() {
     return <p className="text-sm text-red-600 py-12 text-center">{listError}</p>;
   }
 
+  const inputBlocked = sending || (isDraft && noDocuments);
+
   return (
     <div className="grid grid-cols-1 grid-rows-[auto_1fr] md:grid-cols-[240px_1fr] md:grid-rows-1 gap-4 h-[calc(100dvh-9rem)] min-h-[520px]">
       <ConversationList
@@ -302,17 +331,29 @@ export function ChatInterface() {
               {activeConv?.title ?? DEFAULT_TITLE}
             </span>
           </div>
-          <button
-            onClick={() => setPickerOpen((v) => !v)}
-            className="flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs text-slate-700 hover:border-indigo-300 max-w-[55%]"
-          >
-            <Files className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span className="truncate">{scopeLabel}</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 shrink-0 transition-transform', pickerOpen && 'rotate-180')} />
-          </button>
+          {isDraft ? (
+            <span className="shrink-0 text-xs text-slate-500">Pilih dokumen, lalu ajukan pertanyaan</span>
+          ) : (
+            <button
+              onClick={() => setPickerOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs text-slate-700 hover:border-indigo-300 max-w-[55%]"
+            >
+              <Files className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span className="truncate">{scopeLabel}</span>
+              <ChevronDown className={cn('w-3.5 h-3.5 shrink-0 transition-transform', pickerOpen && 'rotate-180')} />
+            </button>
+          )}
         </div>
 
-        {pickerOpen && <DocumentPicker scope={scope} onChange={changeScope} disabled={sending} />}
+        {pickerVisible && (
+          <DocumentPicker scope={scope} onChange={changeScope} disabled={sending} locked={locked} />
+        )}
+
+        {scopeError && (
+          <p className="flex items-start gap-1.5 border-b bg-red-50 px-4 py-2 text-xs text-red-700">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {scopeError}
+          </p>
+        )}
 
         {/* Pesan */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -323,27 +364,37 @@ export function ChatInterface() {
           )}
 
           {!loadingMsgs && messages.length === 0 && (
-            <div className="text-center py-8 space-y-4">
+            <div className="text-center py-6 space-y-4">
               <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
                 <p className="font-medium text-slate-900">Tanyakan apa saja seputar SOP</p>
                 <p className="text-sm text-slate-500">
-                  Sumber saat ini: <b>{scopeLabel}</b>. Ubah lewat tombol di kanan atas.
+                  {noDocuments ? (
+                    'Unggah PDF SOP lewat panel di atas untuk mulai bertanya.'
+                  ) : (
+                    <>
+                      Sumber: <b>{scopeLabel}</b>. Setelah chat dimulai, dokumen tidak bisa dilepas, tapi bisa
+                      ditambah.
+                    </>
+                  )}
                 </p>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    className="text-sm rounded-full border bg-white px-4 py-1.5 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              {!noDocuments && (
+                <div className="flex flex-col items-center gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      disabled={sending}
+                      className="text-sm rounded-full border bg-white px-4 py-1.5 text-slate-700 hover:border-indigo-300 hover:bg-indigo-50"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -417,8 +468,8 @@ export function ChatInterface() {
                   <div className="mt-3 pt-2 border-t border-slate-200 space-y-2">
                     <p className="text-xs font-medium text-slate-500">Sumber</p>
 
-                    {groupCitations(msg.citations).map(([docName, items]) => (
-                      <div key={docName} className="flex flex-wrap items-center gap-1.5">
+                    {groupCitations(msg.citations).map(([key, docName, items]) => (
+                      <div key={key} className="flex flex-wrap items-center gap-1.5">
                         <span className="text-xs font-medium text-slate-700 break-all" title={docName}>
                           {docName}
                         </span>
@@ -491,13 +542,17 @@ export function ChatInterface() {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Contoh: Bandingkan prosedur cuti dan reimbursement"
+            placeholder={
+              isDraft && noDocuments
+                ? 'Unggah PDF dulu lewat panel di atas'
+                : 'Contoh: Bandingkan prosedur cuti dan reimbursement'
+            }
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) send(input);
             }}
-            disabled={sending}
+            disabled={inputBlocked}
           />
-          <Button onClick={() => send(input)} disabled={sending || !input.trim()}>
+          <Button onClick={() => send(input)} disabled={inputBlocked || !input.trim()}>
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </div>

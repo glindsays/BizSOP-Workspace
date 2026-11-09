@@ -9,6 +9,11 @@ router = APIRouter()
 # Catatan: memakai `def` (bukan `async def`) karena memanggil Supabase secara sinkron,
 # supaya dijalankan di thread pool dan tidak memblokir request lain.
 
+LOCKED_MSG = (
+    "Dokumen yang sudah dipakai dalam percakapan tidak bisa dilepas. "
+    "Anda hanya bisa menambah dokumen, atau mulai chat baru untuk dokumen yang berbeda."
+)
+
 class ConversationCreate(BaseModel):
     title: str = "Chat Baru"
     document_ids: List[str] = Field(default_factory=list, description="Kosong = semua dokumen")
@@ -56,7 +61,30 @@ def update_conversation(conversation_id: str, body: ConversationUpdate):
     if not changes:
         raise HTTPException(status_code=400, detail="Tidak ada perubahan.")
     try:
+        # Setelah percakapan dimulai, dokumen hanya boleh ditambah, tidak boleh dilepas
+        if body.document_ids is not None:
+            cur = supabase.table("conversations").select("document_ids") \
+                .eq("id", conversation_id).execute()
+            if not cur.data:
+                raise HTTPException(status_code=404, detail="Percakapan tidak ditemukan.")
+
+            current = cur.data[0].get("document_ids") or []
+            started = bool(
+                supabase.table("messages").select("id")
+                .eq("conversation_id", conversation_id).limit(1).execute().data
+            )
+            if started:
+                new = body.document_ids
+                if not current:
+                    # mode "semua dokumen": tidak boleh dipersempit
+                    if new:
+                        raise HTTPException(status_code=400, detail=LOCKED_MSG)
+                elif new and not set(current).issubset(set(new)):
+                    raise HTTPException(status_code=400, detail=LOCKED_MSG)
+
         res = supabase.table("conversations").update(changes).eq("id", conversation_id).execute()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if not res.data:
