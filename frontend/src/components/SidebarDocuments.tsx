@@ -103,6 +103,7 @@ export function SidebarDocuments() {
   const { documents, activeDoc, setActiveId, refresh, loading } = useApp();
   const [open, setOpen] = useState(true);
   const [query, setQuery] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   // Ingat status buka/tutup
   useEffect(() => {
@@ -116,7 +117,7 @@ export function SidebarDocuments() {
   };
 
   const removeDoc = async (id: string, name: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Mencegah agar baris dokumen tidak ikut terpilih saat tombol hapus diklik
+    e.stopPropagation();
 
     const result = await MySwal.fire({
       title: 'Hapus Dokumen?',
@@ -159,7 +160,9 @@ export function SidebarDocuments() {
 
   const searching = query.trim() !== '';
   const matches = useMemo(() => filterDocuments(documents, query), [documents, query]);
-  const shown = searching ? matches.slice(0, SEARCH_LIMIT) : documents.slice(0, RECENT_LIMIT);
+
+  const limit = searching ? SEARCH_LIMIT : RECENT_LIMIT;
+  const shown = showAll ? (searching ? matches : documents) : (searching ? matches.slice(0, limit) : documents.slice(0, limit));
   const hidden = (searching ? matches.length : documents.length) - shown.length;
 
   const showSearch = documents.length > RECENT_LIMIT || searching;
@@ -183,11 +186,18 @@ export function SidebarDocuments() {
         <>
           {showSearch && (
             <div className="shrink-0 px-2 pb-2">
-              <DocumentSearch value={query} onChange={setQuery} />
+              <DocumentSearch
+                value={query}
+                onChange={(val) => {
+                  setQuery(val);
+                  setShowAll(false);
+                }}
+              />
             </div>
           )}
 
-          <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
+          {/* Container Scrollable hanya untuk Daftar Dokumen */}
+          <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-2">
             {loading && documents.length === 0 && (
               <p className="px-2 text-xs text-slate-400">Memuat dokumen...</p>
             )}
@@ -216,9 +226,7 @@ export function SidebarDocuments() {
                 <div
                   key={doc.id}
                   onClick={() => setActiveId(doc.id)}
-                  title={`${doc.file_name} — ${new Date(doc.created_at).toLocaleString('id-ID')}${
-                    failed && doc.error_message ? `\n${doc.error_message}` : ''
-                  }`}
+                  title={`${doc.file_name} — ${new Date(doc.created_at).toLocaleString('id-ID')}`}
                   className={cn(
                     'group flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors cursor-pointer',
                     active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
@@ -231,7 +239,7 @@ export function SidebarDocuments() {
                   ) : (
                     <FileText className={cn('h-4 w-4 shrink-0', active ? 'text-indigo-600' : 'text-slate-400')} />
                   )}
-                  
+
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] leading-tight">{doc.file_name}</span>
                     <span
@@ -250,8 +258,7 @@ export function SidebarDocuments() {
 
                   <div className="flex items-center gap-1">
                     {active && <Check className="h-4 w-4 shrink-0 text-indigo-600" />}
-                    
-                    {/* Tombol Hapus (Muncul saat di-hover pada baris dokumen) */}
+
                     <button
                       type="button"
                       onClick={(e) => removeDoc(doc.id, doc.file_name, e)}
@@ -265,17 +272,32 @@ export function SidebarDocuments() {
               );
             })}
 
+            {/* Tombol Lihat Semua (di dalam scroll jika belum dibuka) */}
             {hidden > 0 && (
-              <Link
-                href="/"
-                className="block rounded-lg px-3 py-2 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="w-full rounded-lg px-3 py-2 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
               >
                 {searching
-                  ? `+${hidden} hasil lainnya, lihat di halaman Dokumen`
+                  ? `+${hidden} hasil lainnya (Tampilkan Semua)`
                   : `Lihat semua (${documents.length})`}
-              </Link>
+              </button>
             )}
           </div>
+
+          {/* Area Tombol Sticky Paling Bawah Sidebar */}
+          {showAll && (searching ? matches.length : documents.length) > limit && (
+            <div className="shrink-0 border-t bg-white p-2 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setShowAll(false)}
+                className="w-full rounded-lg bg-slate-100 px-3 py-2 text-center text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+              >
+                Tampilkan lebih sedikit
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
