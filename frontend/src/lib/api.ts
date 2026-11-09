@@ -8,10 +8,14 @@ export const api = axios.create({
 });
 
 // ---- Types (sesuai kontrak Pydantic di backend) ----
+export type DocumentStatus = 'processing' | 'ready' | 'failed';
+
 export interface DocumentItem {
   id: string;
   file_name: string;
   created_at: string;
+  status?: DocumentStatus; // dokumen lama tanpa field ini dianggap 'ready'
+  error_message?: string | null;
 }
 
 export interface UploadResult {
@@ -27,6 +31,7 @@ export interface Citation {
   page_number: number;
   source_text: string;
   document_name?: string;
+  document_id?: string; // kosong pada pesan lama
 }
 
 export interface ChatMessage {

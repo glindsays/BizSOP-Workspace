@@ -1,23 +1,49 @@
+import time
+
+from google.genai import types
+
 from app.core.database import supabase, gemini_client
-from google.genai import types  # Pastikan mengimpor modul types
+
+EMBED_MODEL = "gemini-embedding-001"
+EMBED_DIM = 768
+EMBED_BATCH = 20    # jumlah teks per panggilan Gemini
+INSERT_BATCH = 50   # jumlah baris per insert Supabase
+MAX_RETRIES = 4
+
+
+def _embed_batch(texts: list) -> list:
+    """Embed beberapa teks sekaligus, dengan retry (backoff 1s, 2s, 4s)."""
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = gemini_client.models.embed_content(
+                model=EMBED_MODEL,
+                contents=texts,
+                config=types.EmbedContentConfig(output_dimensionality=EMBED_DIM),
+            )
+            vectors = [e.values for e in response.embeddings]
+            if len(vectors) != len(texts):
+                raise ValueError(
+                    f"Jumlah embedding ({len(vectors)}) tidak sama dengan jumlah teks ({len(texts)})."
+                )
+            return vectors
+        except Exception:
+            if attempt == MAX_RETRIES - 1:
+                raise
+            time.sleep(2 ** attempt)
+
 
 def process_and_store_embeddings(document_id: str, chunks: list):
-    for chunk in chunks:
-        # Gunakan 'gemini-embedding-001' dan minta Gemini 
-        # secara langsung mengeluarkan vektor 768 dimensi via parameter config
-        response = gemini_client.models.embed_content(
-            model='gemini-embedding-001',
-            contents=chunk["chunk_text"],
-            config=types.EmbedContentConfig(output_dimensionality=768)
-        )
-        
-        # Ambil nilainya (API sekarang menjamin ukuran array persis 768)
-        embedding_vector = response.embeddings[0].values
-        
-        # Simpan ke Supabase pgvector
-        supabase.table("document_chunks").insert({
-            "document_id": document_id,
-            "page_number": chunk["page_number"],
-            "chunk_text": chunk["chunk_text"],
-            "embedding": embedding_vector
-        }).execute()
+    rows = []
+    for start in range(0, len(chunks), EMBED_BATCH):
+        batch = chunks[start:start + EMBED_BATCH]
+        vectors = _embed_batch([c["chunk_text"] for c in batch])
+        for chunk, vector in zip(batch, vectors):
+            rows.append({
+                "document_id": document_id,
+                "page_number": chunk["page_number"],
+                "chunk_text": chunk["chunk_text"],
+                "embedding": vector,
+            })
+
+    for start in range(0, len(rows), INSERT_BATCH):
+        supabase.table("document_chunks").insert(rows[start:start + INSERT_BATCH]).execute()

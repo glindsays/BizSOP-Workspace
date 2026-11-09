@@ -1,9 +1,11 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DocumentItem, getErrorMessage, listDocuments } from '@/lib/api';
 
 const ACTIVE_KEY = 'current_document_id';
+const POLL_INTERVAL_MS = 4000;
+const POLL_MAX_AGE_MS = 15 * 60 * 1000;
 
 interface AppState {
   documents: DocumentItem[];
@@ -21,6 +23,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeId, setActiveIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const activeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const setActiveId = useCallback((id: string) => {
     setActiveIdState(id);
@@ -48,9 +55,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Refresh diam-diam (polling): memperbarui daftar tanpa mengganti dokumen aktif
+  const refreshQuietly = useCallback(async () => {
+    try {
+      const docs = await listDocuments();
+      setDocuments(docs);
+      const current = activeIdRef.current;
+      if (current && !docs.some((d) => d.id === current)) {
+        const next = docs[0]?.id ?? null;
+        setActiveIdState(next);
+        if (next) localStorage.setItem(ACTIVE_KEY, next);
+        else localStorage.removeItem(ACTIVE_KEY);
+      }
+    } catch {
+      // gangguan sesaat saat polling: abaikan, coba lagi di putaran berikutnya
+    }
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Polling selama ada dokumen yang masih diindeks
+  const hasProcessing = useMemo(
+    () =>
+      documents.some(
+        (d) =>
+          d.status === 'processing' &&
+          Date.now() - new Date(d.created_at).getTime() < POLL_MAX_AGE_MS
+      ),
+    [documents]
+  );
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = setInterval(refreshQuietly, POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [hasProcessing, refreshQuietly]);
 
   const activeDoc = useMemo(
     () => documents.find((d) => d.id === activeId) ?? null,
